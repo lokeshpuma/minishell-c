@@ -1,0 +1,84 @@
+name: Deploy MiniShell to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Native Tests & WebAssembly
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Clang & Build Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang cmake
+
+      - name: Build & Run Native Tests
+        run: |
+          make test
+
+      - name: Set up Emscripten SDK
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.64
+
+      - name: Verify Emscripten
+        run: |
+          emcc --version
+
+      - name: Build WebAssembly Target
+        run: |
+          make wasm
+
+      - name: Prepare Static Site Distribution
+        run: |
+          mkdir -p dist
+          cp -r web/* dist/
+          # Ensure wasm files are present
+          ls -la dist/public/wasm/
+
+      - name: Verify Distribution Files
+        run: |
+          test -f dist/index.html
+          test -f dist/src/styles.css
+          test -f dist/src/main.js
+          test -f dist/public/wasm/minishell.js
+          test -f dist/public/wasm/minishell.wasm
+          echo "All distribution assets successfully verified."
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniShell — Operating System Shell in C & WebAssembly</title>
+  <meta name="description" content="A small Linux-like command interpreter in C11 demonstrating tokenizer, parser, POSIX process execution, pipelines, and a safe WebAssembly browser demo.">
+  <link rel="stylesheet" href="src/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐚</text></svg>">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-content">
+      <div class="brand">
+        <span class="brand-icon">🐚</span>
+        <div>
+          <h1>MiniShell</h1>
+          <p class="tagline">Mini Operating System Shell in C &middot; WebAssembly Demo</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-native">Native POSIX (C11)</span>
+        <span class="badge badge-wasm">WebAssembly (Emscripten)</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Notice / Limitations Banner -->
+    <div class="alert-box alert-info" role="region" aria-label="Demo notice">
+      <div class="alert-icon">ℹ️</div>
+      <div class="alert-text">
+        <strong>Browser Demo Environment:</strong> This static demonstration runs the shared C tokenizer, AST parser, and virtual command engine compiled to WebAssembly. All files and pipes operate in safe in-memory virtual storage without accessing host processes or visitor files.
+      </div>
+    </div>
+
+    <!-- Terminal Section -->
+    <section class="terminal-card" aria-label="Terminal emulator">
+      <div class="terminal-bar">
+        <div class="window-controls" aria-hidden="true">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="terminal-title">user@wasm: <span id="current-dir-display">/home/user</span> &mdash; minishell (c11/wasm)</div>
+        <div class="terminal-actions">
+          <button id="btn-clear" class="btn btn-sm btn-ghost" title="Clear terminal (Ctrl+L)" aria-label="Clear terminal">Clear</button>
+          <button id="btn-reset" class="btn btn-sm btn-ghost" title="Reset virtual filesystem" aria-label="Reset virtual filesystem">Reset VFS</button>
+        </div>
+      </div>
+
+      <div class="terminal-screen" id="terminal-screen" tabindex="0" role="log" aria-live="polite">
+        <div class="terminal-history" id="terminal-history">
+          <!-- Initial welcome output will be rendered here -->
+        </div>
+
+        <div class="terminal-prompt-line">
+          <span class="prompt-prefix" id="prompt-prefix">minishell:/home/user$&nbsp;</span>
+          <div class="input-wrapper">
+            <input type="text" id="terminal-input" class="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus aria-label="Terminal command input">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Commands / Examples -->
+    <section class="examples-panel" aria-label="Command examples">
+      <h2>Quick Commands (Click to Run)</h2>
+      <div class="example-buttons">
+        <button class="cmd-pill" data-cmd="help"><code>help</code></button>
+        <button class="cmd-pill" data-cmd="pwd"><code>pwd</code></button>
+        <button class="cmd-pill" data-cmd="ls -la"><code>ls -la</code></button>
+        <button class="cmd-pill" data-cmd="cat welcome.txt"><code>cat welcome.txt</code></button>
+        <button class="cmd-pill" data-cmd="cat notes.txt"><code>cat notes.txt</code></button>
+        <button class="cmd-pill" data-cmd="cat data/fruits.txt | sort | uniq -c"><code>cat data/fruits.txt | sort | uniq -c</code></button>
+        <button class="cmd-pill" data-cmd="grep Engineer data/sample.csv"><code>grep Engineer data/sample.csv</code></button>
+        <button class="cmd-pill" data-cmd="echo 'hello world' > output.txt ; cat output.txt"><code>echo 'hello world' > output.txt ; cat output.txt</code></button>
+        <button class="cmd-pill" data-cmd="wc -l data/sample.csv"><code>wc -l data/sample.csv</code></button>
+        <button class="cmd-pill" data-cmd="history"><code>history</code></button>
+      </div>
+    </section>
+
+    <!-- Architecture & Features Comparison Grid -->
+    <section class="info-grid">
+      <div class="info-card">
+        <h3>Native POSIX Architecture</h3>
+        <p>A true Unix-like command interpreter written in C11 utilizing real kernel primitives:</p>
+        <ul class="feature-list">
+          <li><strong>Process Execution:</strong> <code>fork()</code> &amp; <code>execvp()</code> with PATH lookup.</li>
+          <li><strong>Process Control:</strong> <code>waitpid()</code> status collection ($? exit codes).</li>
+          <li><strong>Pipelines:</strong> Multi-stage pipelines via <code>pipe()</code> &amp; <code>dup2()</code>.</li>
+          <li><strong>Redirection:</strong> <code>&lt;</code>, <code>&gt;</code>, <code>&gt;&gt;</code>, <code>2&gt;</code>, <code>2&gt;&gt;</code> with <code>open()</code> flags.</li>
+          <li><strong>Signals:</strong> Foreground process interruption with <code>SIGINT</code> (Ctrl+C).</li>
+          <li><strong>Parent Built-ins:</strong> Standalone state-changers (<code>cd</code>, <code>export</code>, <code>exit</code>) execute in parent; pipelines execute in children.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>WebAssembly Browser Architecture</h3>
+        <p>An educational simulation compiled to client-side WebAssembly with Emscripten:</p>
+        <ul class="feature-list">
+          <li><strong>Shared Parser:</strong> Identical tokenizer, quote escaping, and AST parser.</li>
+          <li><strong>Virtual Filesystem:</strong> Hierarchical in-memory VFS with sample datasets.</li>
+          <li><strong>In-Memory Pipelines:</strong> Byte stream pipelining between virtual commands.</li>
+          <li><strong>Security Boundary:</strong> Strict allowlist preventing arbitrary JS eval or host compromise.</li>
+          <li><strong>Zero Backend:</strong> Deployed as pure static assets to GitHub Pages.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Technical Details & Links -->
+    <section class="docs-section">
+      <div class="docs-card">
+        <h3>Technical Documentation</h3>
+        <p>Explore the design specifications, API contracts, and usage manuals:</p>
+        <div class="doc-links">
+          <a href="https://github.com/lokeshpuma/minishell-c" id="repo-link" class="doc-link" target="_blank" rel="noopener">
+            <span>📦</span> Repository Source Code
+          </a>
+          <a href="https://github.com/lokeshpuma/minishell-c/blob/main/docs/architecture.md" class="doc-link" target="_blank" rel="noopener">
+            <span>📐</span> Architecture &amp; Internal Design
+          </a>
+          <a href="https://github.com/lokeshpuma/minishell-c/blob/main/docs/command-reference.md" class="doc-link" target="_blank" rel="noopener">
+            <span>📖</span> Complete Command Reference
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>MiniShell &mdash; Operating System Shell in C (C11) &amp; WebAssembly &middot; Open Source Portfolio Project</p>
+  </footer>
+
+  <script src="src/main.js"></script>
+</body>
+</html>
+

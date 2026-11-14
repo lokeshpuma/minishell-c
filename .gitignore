@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+build/
+*.o
+*.a
+*.so
+*.dylib
+
+# Test artifacts
+test_stdout.log
+test_stderr.log
+err.txt
+output.txt
+test.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
